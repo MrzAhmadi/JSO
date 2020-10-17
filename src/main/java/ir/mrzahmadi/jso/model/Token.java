@@ -41,6 +41,10 @@ public class Token {
         return token;
     }
 
+    public boolean isExpired() {
+        return isExpired;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }

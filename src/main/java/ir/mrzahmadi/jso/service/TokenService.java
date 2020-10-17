@@ -1,6 +1,7 @@
 package ir.mrzahmadi.jso.service;
 
 import ir.mrzahmadi.jso.model.Token;
+import ir.mrzahmadi.jso.model.User;
 import ir.mrzahmadi.jso.repository.TokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,5 +23,10 @@ public class TokenService {
     public void addToken(Token token) {
         tokenRepository.save(token);
     }
+
+    public Token findByUserAndOtp(User user, String otp){
+        return tokenRepository.findByUserAndOtp(user,otp);
+    }
+
 
 }
