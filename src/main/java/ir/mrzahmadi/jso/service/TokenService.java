@@ -28,5 +28,9 @@ public class TokenService {
         return tokenRepository.findByUserAndOtp(user,otp);
     }
 
+    public Token findByUserAndToken(User user, String token){
+        return tokenRepository.findByUserAndToken(user,token);
+    }
+
 
 }

@@ -1,6 +1,6 @@
 package ir.mrzahmadi.jso.api;
 
-import ir.mrzahmadi.jso.Utils.JwtUtil;
+import ir.mrzahmadi.jso.Utils.jwt.JwtUtil;
 import ir.mrzahmadi.jso.model.Request.LoginRequest;
 import ir.mrzahmadi.jso.model.Request.VerifyOTPRequest;
 import ir.mrzahmadi.jso.model.Response.BaseResponse;
@@ -13,26 +13,34 @@ import ir.mrzahmadi.jso.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.Random;
 
+import static ir.mrzahmadi.jso.Utils.Const.PASSWORD_ENCRYPT;
+
 @RestController
 @RequestMapping("/api/auth/")
 public class AuthController {
 
-    UserService userService;
-    TokenService tokenService;
-    JwtUtil jwtUtil;
+    private UserService userService;
+    private TokenService tokenService;
+    private JwtUtil jwtUtil;
+    private AuthenticationManager authenticationManager;
 
     Random random = new Random();
 
     @Autowired
-    public AuthController(UserService userService, TokenService tokenService, JwtUtil jwtUtil) {
+    public AuthController(UserService userService, TokenService tokenService, JwtUtil jwtUtil, AuthenticationManager authenticationManager) {
         this.userService = userService;
         this.tokenService = tokenService;
         this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
     }
 
     @PostMapping("login")
@@ -58,7 +66,7 @@ public class AuthController {
 
     @PostMapping("verify-otp")
     public @ResponseBody
-    ResponseEntity<?> verifyOTP(@RequestBody VerifyOTPRequest verifyOTPRequest) {
+    ResponseEntity<?> verifyOTP(@RequestBody VerifyOTPRequest verifyOTPRequest) throws Exception {
         User user = userService.findByPhoneNumber(verifyOTPRequest.getPhoneNumber());
         if (user == null) {
             ErrorResponse errorResponse = new ErrorResponse(
@@ -75,8 +83,19 @@ public class AuthController {
                 );
                 return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
             } else {
+                authenticate(verifyOTPRequest.getPhoneNumber(), PASSWORD_ENCRYPT);
                 return new ResponseEntity<>(new VerifyOTPResponse(token.getToken()), HttpStatus.OK);
             }
+        }
+    }
+
+    private void authenticate(String username, String password) throws Exception {
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+        } catch (DisabledException e) {
+            throw new Exception("USER_DISABLED", e);
+        } catch (BadCredentialsException e) {
+            throw new Exception("INVALID_CREDENTIALS", e);
         }
     }
 

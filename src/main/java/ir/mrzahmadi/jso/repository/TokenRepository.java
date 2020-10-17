@@ -18,4 +18,6 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
 
     Token findByUserAndOtp(User user, String otp);
 
+    Token findByUserAndToken(User user, String token);
+
 }
