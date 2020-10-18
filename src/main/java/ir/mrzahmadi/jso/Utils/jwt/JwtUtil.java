@@ -5,6 +5,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import java.util.Calendar;
 import java.util.Date;
 
 @Service
@@ -21,7 +22,12 @@ public class JwtUtil {
     }
 
     public long generateExpirationDate() {
-        return System.currentTimeMillis() + (60 * 60 * 24 * 1000);
+        Date now = new Date();
+        Calendar c = Calendar.getInstance();
+        c.setTime(now);
+        c.add(Calendar.MONTH, 6);
+        Date sixMonthLater = c.getTime();
+        return sixMonthLater.getTime();
     }
 
     public String getPhoneNumber(String token) {
