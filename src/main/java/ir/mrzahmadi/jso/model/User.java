@@ -7,8 +7,6 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static ir.mrzahmadi.jso.Utils.Const.PASSWORD_ENCRYPT;
-
 @Entity(name = "users_tbl")
 public class User implements UserDetails {
 
@@ -65,7 +63,7 @@ public class User implements UserDetails {
 
     @Override
     public String getPassword() {
-        return PASSWORD_ENCRYPT;
+        return null;
     }
 
     @Override

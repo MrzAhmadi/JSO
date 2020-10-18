@@ -1,11 +1,14 @@
-package ir.mrzahmadi.jso.model.Response;
+package ir.mrzahmadi.jso.model.Request;
 
-public class VerifyOTPResponse {
+public class RefreshTokenRequest {
 
     private String accessToken;
     private String refreshToken;
 
-    public VerifyOTPResponse(String accessToken, String refreshToken) {
+    public RefreshTokenRequest() {
+    }
+
+    public RefreshTokenRequest(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
     }

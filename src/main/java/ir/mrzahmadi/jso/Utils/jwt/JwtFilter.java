@@ -54,9 +54,14 @@ public class JwtFilter extends OncePerRequestFilter {
                 User user = userService.findByPhoneNumber(phoneNumber);
                 UserDetails userDetails = userService.loadUserByUsername(phoneNumber);
 
-                long tokenExpirationTime = jwtUtil.getExpirationByTime(jwt);
+                Long tokenExpirationTime = null;
+                try {
+                    tokenExpirationTime = jwtUtil.getExpirationByTime(jwt);
+                } catch (Exception e) {
+                    unAuthorized(response);
+                }
 
-                if (user != null && jwtUtil.validateToken(jwt, userDetails) && tokenExpirationTime == user.getTokeExpirationDate()) {
+                if (user != null && jwtUtil.validateAccessToken(jwt, userDetails) && tokenExpirationTime != null && tokenExpirationTime == user.getTokeExpirationDate()) {
 
                     UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -69,8 +74,13 @@ public class JwtFilter extends OncePerRequestFilter {
                 unAuthorized(response);
         } else {
             String url = UriComponentsBuilder.fromHttpRequest(new ServletServerHttpRequest(request)).build().toUriString();
-            if (!url.contains("/auth/"))
-                unAuthorized(response);
+            for (int i = 0; i < jwtUtil.getIgnoreJwtUrls().size(); i++) {
+                String skip = jwtUtil.getIgnoreJwtUrls().get(i);
+                if (url.equals(skip)) {
+                    unAuthorized(response);
+                    break;
+                }
+            }
         }
         filterChain.doFilter(request, response);
     }
