@@ -19,24 +19,43 @@ public class User implements UserDetails {
     @Column(name = "phone_number", unique = true, nullable = false)
     private String phoneNumber;
 
+    @Column(name = "toke_expiration_date")
+    private long tokeExpirationDate;
+
+    private String otp;
+
     public User() {
 
     }
 
-    public User(String phoneNumber) {
+    public User(String phoneNumber, long tokeExpirationDate, String otp) {
         this.phoneNumber = phoneNumber;
+        this.tokeExpirationDate = tokeExpirationDate;
+        this.otp = otp;
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getPhoneNumber() {
         return phoneNumber;
+    }
+
+    public long getTokeExpirationDate() {
+        return tokeExpirationDate;
+    }
+
+    public void setTokeExpirationDate(long tokeExpirationDate) {
+        this.tokeExpirationDate = tokeExpirationDate;
+    }
+
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
     }
 
     @Override

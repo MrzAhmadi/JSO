@@ -23,8 +23,8 @@ public class UserService implements UserDetailsService {
         return userRepository.findByPhoneNumber(phoneNumber);
     }
 
-    public User registerUser(User user) {
-        return userRepository.save(user);
+    public void registerUser(User user) {
+        userRepository.save(user);
     }
 
     @Override

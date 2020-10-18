@@ -2,16 +2,16 @@ package ir.mrzahmadi.jso.Utils.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ir.mrzahmadi.jso.model.Response.ErrorResponse;
-import ir.mrzahmadi.jso.model.Token;
 import ir.mrzahmadi.jso.model.User;
-import ir.mrzahmadi.jso.service.TokenService;
 import ir.mrzahmadi.jso.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -24,15 +24,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private JwtUtil jwtUtil;
     private UserService userService;
-    private TokenService tokenService;
     private ObjectMapper mapper;
 
 
     @Autowired
-    public JwtFilter(JwtUtil jwtUtil, UserService userService, TokenService tokenService, ObjectMapper mapper) {
+    public JwtFilter(JwtUtil jwtUtil, UserService userService, ObjectMapper mapper) {
         this.jwtUtil = jwtUtil;
         this.userService = userService;
-        this.tokenService = tokenService;
         this.mapper = mapper;
     }
 
@@ -45,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
             String phoneNumber = null;
             try {
                 phoneNumber = jwtUtil.getPhoneNumber(jwt);
-            }catch (Exception e){
+            } catch (Exception e) {
                 unAuthorized(response);
                 return;
             }
@@ -55,9 +53,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 User user = userService.findByPhoneNumber(phoneNumber);
                 UserDetails userDetails = userService.loadUserByUsername(phoneNumber);
-                Token token = tokenService.findByUserAndToken(user, jwt);
 
-                if (user != null && jwtUtil.validateToken(jwt, userDetails) && !token.isExpired()) {
+                long tokenExpirationTime = jwtUtil.getExpirationByTime(jwt);
+
+                if (user != null && jwtUtil.validateToken(jwt, userDetails) && tokenExpirationTime == user.getTokeExpirationDate()) {
 
                     UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -68,8 +67,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
             } else
                 unAuthorized(response);
-        } else
-            unAuthorized(response);
+        } else {
+            String url = UriComponentsBuilder.fromHttpRequest(new ServletServerHttpRequest(request)).build().toUriString();
+            if (!url.contains("/auth/"))
+                unAuthorized(response);
+        }
         filterChain.doFilter(request, response);
     }
 

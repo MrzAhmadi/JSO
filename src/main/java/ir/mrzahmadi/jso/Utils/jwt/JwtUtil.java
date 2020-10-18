@@ -12,22 +12,31 @@ public class JwtUtil {
 
     private final String SECRET = "MY_SECRET_KEY";
 
-    public String generateToken(String phoneNumber) {
+    public String generateToken(String phoneNumber, long expiration) {
         return Jwts.builder()
                 .setSubject(phoneNumber)
-                .setExpiration(new Date(System.currentTimeMillis() + (60 * 60 * 24 * 1000)))
+                .setExpiration(new Date(expiration))
                 .signWith(SignatureAlgorithm.HS256, SECRET)
                 .compact();
     }
 
+    public long generateExpirationDate() {
+        return System.currentTimeMillis() + (60 * 60 * 24 * 1000);
+    }
+
     public String getPhoneNumber(String token) {
-            return Jwts.parser().setSigningKey(SECRET)
-                    .parseClaimsJws(token).getBody().getSubject();
+        return Jwts.parser().setSigningKey(SECRET)
+                .parseClaimsJws(token).getBody().getSubject();
     }
 
     public Date getExpiration(String token) {
         return Jwts.parser().setSigningKey(SECRET)
                 .parseClaimsJws(token).getBody().getExpiration();
+    }
+
+    public long getExpirationByTime(String token) {
+        return Jwts.parser().setSigningKey(SECRET)
+                .parseClaimsJws(token).getBody().getExpiration().getTime();
     }
 
     private Boolean isTokenExpired(String token) {

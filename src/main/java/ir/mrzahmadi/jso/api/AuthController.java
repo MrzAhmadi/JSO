@@ -6,9 +6,7 @@ import ir.mrzahmadi.jso.model.Request.VerifyOTPRequest;
 import ir.mrzahmadi.jso.model.Response.BaseResponse;
 import ir.mrzahmadi.jso.model.Response.ErrorResponse;
 import ir.mrzahmadi.jso.model.Response.VerifyOTPResponse;
-import ir.mrzahmadi.jso.model.Token;
 import ir.mrzahmadi.jso.model.User;
-import ir.mrzahmadi.jso.service.TokenService;
 import ir.mrzahmadi.jso.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,16 +27,14 @@ import static ir.mrzahmadi.jso.Utils.Const.PASSWORD_ENCRYPT;
 public class AuthController {
 
     private UserService userService;
-    private TokenService tokenService;
     private JwtUtil jwtUtil;
     private AuthenticationManager authenticationManager;
 
     Random random = new Random();
 
     @Autowired
-    public AuthController(UserService userService, TokenService tokenService, JwtUtil jwtUtil, AuthenticationManager authenticationManager) {
+    public AuthController(UserService userService, JwtUtil jwtUtil, AuthenticationManager authenticationManager) {
         this.userService = userService;
-        this.tokenService = tokenService;
         this.jwtUtil = jwtUtil;
         this.authenticationManager = authenticationManager;
     }
@@ -48,17 +44,21 @@ public class AuthController {
     ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         User user = userService.findByPhoneNumber(loginRequest.getPhoneNumber());
         if (user == null) {
-            user = new User(loginRequest.getPhoneNumber());
-            user = userService.registerUser(user);
+            long expirationDate = jwtUtil.generateExpirationDate();
+            String token = jwtUtil.generateToken(loginRequest.getPhoneNumber(),expirationDate);
+            expirationDate = jwtUtil.getExpirationByTime(token);
             int otp = random.nextInt(99999);
-            Token token = new Token(user, String.valueOf(otp), jwtUtil.generateToken(loginRequest.getPhoneNumber()));
-            tokenService.addToken(token);
+            user = new User(loginRequest.getPhoneNumber(),expirationDate,String.valueOf(otp));
+            userService.registerUser(user);
             System.out.println("This code send by sms/message: " + otp);
         } else {
-            tokenService.expireAll(user.getId());
+            long expirationDate = jwtUtil.generateExpirationDate();
+            String token = jwtUtil.generateToken(loginRequest.getPhoneNumber(),expirationDate);
+            expirationDate = jwtUtil.getExpirationByTime(token);
             int otp = random.nextInt(99999);
-            Token token = new Token(user, String.valueOf(otp), jwtUtil.generateToken(loginRequest.getPhoneNumber()));
-            tokenService.addToken(token);
+            user.setTokeExpirationDate(expirationDate);
+            user.setOtp(String.valueOf(otp));
+            userService.registerUser(user);
             System.out.println("This code send by sms/message: " + otp);
         }
         return new ResponseEntity<>(new BaseResponse("otp send"), HttpStatus.OK);
@@ -75,16 +75,16 @@ public class AuthController {
             );
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         } else {
-            Token token = tokenService.findByUserAndOtp(user, verifyOTPRequest.getOtp());
-            if (token == null || token.isExpired()) {
+            if (user.getOtp() == null || !user.getOtp().equals(verifyOTPRequest.getOtp())) {
                 ErrorResponse errorResponse = new ErrorResponse(
                         HttpServletResponse.SC_FORBIDDEN,
                         "Invalid otp!"
                 );
                 return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
             } else {
+                String token = jwtUtil.generateToken(verifyOTPRequest.getPhoneNumber(),user.getTokeExpirationDate());
                 authenticate(verifyOTPRequest.getPhoneNumber(), PASSWORD_ENCRYPT);
-                return new ResponseEntity<>(new VerifyOTPResponse(token.getToken()), HttpStatus.OK);
+                return new ResponseEntity<>(new VerifyOTPResponse(token), HttpStatus.OK);
             }
         }
     }
