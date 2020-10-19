@@ -22,12 +22,6 @@ public class UserController {
         this.jwtUtil = jwtUtil;
     }
 
-    @PostMapping("test")
-    public @ResponseBody
-    String testApi() {
-        return "User service is up";
-    }
-
     @GetMapping("details")
     public ResponseEntity<DetailsResponse> getDetails(@RequestHeader("Authorization") String authorization) {
         String phoneNumber = jwtUtil.getPhoneNumber(authorization);
